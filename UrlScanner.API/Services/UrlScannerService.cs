@@ -13,19 +13,19 @@ namespace UrlScanner.API.Services
         // Shamelessly lifted from John Gruber's URL regex and slightly modified to handle Unicode
         // Original source: https://gist.github.com/gruber/249502#gistcomment-1945967
         private static readonly Regex _urlRegex = new Regex(@"
-\b  # Only look potential URLs that begin on a word boundary
-(   # Capture entire URL
-    (?:         
+\b  # Only look for potential URLs that begin on a word boundary
+(   # Capture the entire URL
+    (?:
         [a-z][\w-]+:    # URL protocol and colon
         (?:
             /{1,3}      # 1-3 slashes
             |           # or!
             [a-z0-9%]   # a single letter, or digit, or percent sign (%)
-        )        
+        )
         |
-        [0-9\p{L}]+[.]   # Any number of unicode letters followed  by a dot        
+        [0-9\p{L}\S]+[.]   # Something subdomain-like followed by a dot
         |
-        [0-9\p{L}]+[.]\p{L}{2,24} # Something that looks like a domain name (i.e. letters, followed by a dot, then a TLD)
+        [0-9\p{L}\S]+[.]\p{L}{2,24} # Something that looks like a domain name (i.e. letters, followed by a dot, then a TLD)             
         |
         (?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?::[0-9]{1,5})?  # IPv4 address with optional port
     )
@@ -123,9 +123,13 @@ namespace UrlScanner.API.Services
                     return !string.IsNullOrEmpty(parsedUri.Scheme);
                 }
 
-                // Now that we've made it absolute and possibly glued on an "http", check the scheme, and if it's http,
-                // make sure it has a valid TLD.
-                if (parsedUri.Scheme == "http" || parsedUri.Scheme == "https")
+                // Now that we've made it absolute and possibly glued on an "http", check the scheme, and if it's a well-known
+                // scheme that we know needs a TLD, make sure it has one.
+                // This does not account for wacky shenanigans where a TLD *itself* has an A record pointing to some IP address,
+                // resulting in valid URLs such as http://to./
+                if (parsedUri.Scheme == "http" || parsedUri.Scheme == "https"
+                    || parsedUri.Scheme == "ftp" || parsedUri.Scheme == "ftps"
+                    || parsedUri.Scheme == "ws" || parsedUri.Scheme == "wss")
                 {
                     return _tlds.Value.Any(tld => parsedUri.Host.EndsWith($".{tld}"));
                 }

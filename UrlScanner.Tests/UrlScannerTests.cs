@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
 using System;
+using System.Collections.Generic;
 using UrlScanner.API.Services;
 using Xunit;
 
@@ -59,7 +60,7 @@ namespace UrlScanner.Tests
         [InlineData("http://j.mp")]
         [InlineData("ftp://foo.bar/baz")]
         [InlineData("http://foo.bar/?q=Test%20URL-encoded%20stuff")]
-        // [InlineData("http://مثال.إختبار")] // <-- This fails due to the RTL shenanigans. If the scanner checks for .StartsWith($"{مثال}."), then it works.
+        // [InlineData("http://مثال.إختبار")] // <-- This fails due to RTL shenanigans. If the scanner checks for .StartsWith($"{مثال}."), then it works.
         [InlineData("http://例子.测试")]
         [InlineData("http://उदाहरण.परीक्षा")]
         [InlineData("http://-.~_!$&'()*+,;=:%40:80%2f::::::@example.com")]
@@ -69,7 +70,11 @@ namespace UrlScanner.Tests
         [InlineData("somedomainname.com:1234")] // This is right on the borderline. Most URL highlighters wouldn't highlight this, but a browser would accept it.
         [InlineData("http://greece.ευ")] // <-- new international unicode TLD
         [InlineData("http://xn--addas-o4a.de/")] // A punycode URL for...
-        [InlineData("adıdas.de")] // an "adidas" website written with a dotless i. 
+        [InlineData("adıdas.de")] // an "adidas" website written with a dotless i.         
+        [InlineData("http://use rid:password@example.com/")] // This is valid because it resolves down to 'rid:password@example.com/', which we optimistically glue an 'http://'  to the front of.
+        // Long URL with lots of query params
+        [InlineData("https://www.google.com/search?q=fuzzy+URL+validation&client=firefox-b-d&sxsrf=ALeKk00vuqPHMzCg6dIW40i9ZVePIjly9A%3A1616107199897&ei=v9ZTYMmjNu3HrgS9rqOQDw&oq=fuzzy+URL+validation&gs_lcp=Cgdnd3Mtd2l6EAMyBwghEAoQoAEyBwghEAoQoAE6BwgjELADECc6BQghEKABUN4pWL0wYI0xaAJwAHgAgAF4iAH3BpIBAzkuMZgBAKABAaoBB2d3cy13aXrIAQHAAQE&sclient=gws-wiz&ved=0ahUKEwiJ_8W89LrvAhXto4sKHT3XCPIQ4dUDCAw&uact=5")]
+        [InlineData("http://ddos-link.com/[test.......................................]")] // URL that may DOS a bad Regex
         public void UrlScanner_ShouldDetectUrls(string input)
         {
             var uris = _urlScanner.GetUrls(input);
@@ -81,6 +86,7 @@ namespace UrlScanner.Tests
         [InlineData("🍕.ws", "http://🍕.ws/")]
         [InlineData("500px.com", "http://500px.com/")]
         [InlineData("www.google.com", "http://www.google.com/")]
+        [InlineData("google.com", "http://www.google.com/")]
         public void UrlScanner_ShouldCorrectlyCanonicalizeUrls(string input, string expected)
         {
             Uri.TryCreate(expected, UriKind.Absolute, out Uri? parsedUri);
@@ -102,10 +108,51 @@ namespace UrlScanner.Tests
         [InlineData("picture.dog.jpg")] // Most of these are technically valid relative URLs
         [InlineData("heresathing.bmp")] // But we only want to be returning valid absolute URLs
         [InlineData("fragmentary/url/data.html")]
+        [InlineData("www.")]
+        [InlineData("google")]
+        [InlineData("http://")]
+        [InlineData("http://w")]
+        [InlineData("http://www")]
+        [InlineData("http://google")]
+        [InlineData("http://www.")]
+        [InlineData("http://subd.")]
         public void UrlScanner_ShouldNotReturnFalsePositives(string input)
         {
             var uris = _urlScanner.GetUrls(input);
             Assert.Empty(uris);
         }
+
+        [Theory]
+        [MemberData(nameof(BodyTexts))]
+        public void UrlScanner_ShouldExtractAllLinksFromLongerText(string bodyText, Uri[] expectedUris)
+        {
+            var actualUris = _urlScanner.GetUrls(bodyText);
+            Assert.Equal(expectedUris, actualUris);
+        }
+
+        public static IEnumerable<object[]> BodyTexts =>
+            new List<object[]>
+            {
+                new object[] { @"Visit photo hosting sites such as www.flickr.com, 500px.com, www.freeimagehosting.net and 
+https://postimage.io, and upload these two image files, picture.dog.png and picture.cat.jpeg, 
+there. After that share their links at https://www.facebook.com/ and http://🍕.ws",
+                    new Uri[] {
+                        new Uri("http://www.flickr.com"),
+                        new Uri("http://500px.com"),
+                        new Uri("http://www.freeimagehosting.net"),
+                        new Uri("https://postimage.io"),
+                        new Uri("https://www.facebook.com"),
+                        new Uri("http://🍕.ws"),
+                    }},
+
+                new object[] { @"Now let's see here, let's take a link with a typo in the middle: https://www .fimfiction.net/story/34928
+throw in an ftp link like ftp://freenode.net/90sK00lWarez and one a Java bundle ID for maximum sillness com.facebook.messenger.
+Here's an example of link splitting resulting in some interesting behavior ftps://www. someancientftpserver.com/allTheMp3s",
+                    new Uri[] {
+                        new Uri("http://fimfiction.net/story/34928"), // This one survives because https://www is not valid, but .fimfiction.net/story/34928 might be!
+                        new Uri("ftp://freenode.net/90sK00lWarez"),
+                        new Uri("http://someancientftpserver.com/allTheMp3s") // similar behavior. the ftps:// gets chopped off, but we optimistically glue an http onto the front
+                    }},
+            };
     }
 }
