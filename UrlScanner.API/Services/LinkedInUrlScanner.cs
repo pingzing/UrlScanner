@@ -28,10 +28,6 @@ namespace UrlScanner.API.Services
             return tlds;
         }, isThreadSafe: false);
 
-        public LinkedInUrlScanner()
-        {
-        }
-
         public string[] GetUrls(string body)
         {
             UrlDetector detector = new UrlDetector(body,
@@ -53,7 +49,6 @@ namespace UrlScanner.API.Services
             return discoveredUrls
                 .Where(x =>
                 {
-                    // TLD check, to make sure we don't pick up files
                     if (x == null)
                     {
                         return false;
@@ -69,6 +64,7 @@ namespace UrlScanner.API.Services
                         }
                     }
 
+                    // TLD check, to make sure we don't pick up files
                     return _tlds.Value.Any(tld => x.GetHost().EndsWith($".{tld}"));
                 })
                 .Select(x => x.GetFullUrl())

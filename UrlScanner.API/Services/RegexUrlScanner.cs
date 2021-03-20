@@ -46,7 +46,7 @@ namespace UrlScanner.API.Services
     ){0,} # Optional, so anything that gets handled by the first or second block alone still gets matched
 )", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
 
-        // Differs only VERY slightly: the second and third blocks are no longer optional.
+        // Differs only VERY slightly: the third block is no longer optional.
         private static readonly Regex _stricterRegex = new Regex(@"
 (?:
     (?:
@@ -78,8 +78,6 @@ namespace UrlScanner.API.Services
     )
 )", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace);
 
-        private readonly ILogger<RegexUrlScanner> _logger;
-        private readonly IdnMapping _idn = new IdnMapping();
         private readonly Lazy<List<string>> _tlds = new Lazy<List<string>>(() =>
         {
             List<string> tlds = new List<string>();
@@ -99,6 +97,8 @@ namespace UrlScanner.API.Services
             return tlds;
         }, isThreadSafe: false);
 
+        private readonly IdnMapping _idn = new IdnMapping();
+
         public string[] GetUrls(string body)
         {
             // List of candidate matches
@@ -111,9 +111,8 @@ namespace UrlScanner.API.Services
             // Attempt to process each candidate URL into a canonical URI
             return matches.Select(urlCandidate =>
             {
-
                 // If we can't even *conceivably* turn it into a URI, we give it one more chance under the stricter regex
-                // that cuts out more punctuation, etc
+                // that cuts out more punctuation
                 // If that still doesn't work, it's probably not a URL.
                 if (!Uri.TryCreate(urlCandidate.Value, UriKind.RelativeOrAbsolute, out Uri? parsedUri))
                 {
