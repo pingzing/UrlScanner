@@ -30,6 +30,6 @@ steps:
   displayName: "Publish API project"
   inputs:
     command: 'publish'    
-    arguments: -c $(buildConfiguration)
     publishWebProjects: false
     projects: '.\UrlScanner.API\UrlScanner.API.csproj'
+    arguments: -c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/Output
