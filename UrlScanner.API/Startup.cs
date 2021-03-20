@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Text.Json.Serialization;
 using UrlScanner.API.Formatter;
 using UrlScanner.API.Services;
 
@@ -24,10 +25,9 @@ namespace UrlScanner.API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers(opts =>
-            {
-                opts.InputFormatters.Add(new TextPlainInputFormatter());
-            });
+            services.AddControllers(opts => opts.InputFormatters.Add(new TextPlainInputFormatter()))
+                .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "UrlScanner.API", Version = "v1" });
@@ -35,7 +35,9 @@ namespace UrlScanner.API
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
             });
-            services.AddSingleton<IUrlScannerService, UrlScannerService>();
+
+            services.AddSingleton<IUrlScannerService, RegexUrlScanner>();
+            services.AddSingleton<IUrlScannerService, LinkedInUrlScanner>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -48,13 +50,8 @@ namespace UrlScanner.API
 
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "UrlScanner.API v1"));
-
             app.UseHttpsRedirection();
-
             app.UseRouting();
-
-            app.UseAuthorization();
-
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

@@ -10,6 +10,6 @@ namespace UrlScanner.API.Services
         /// <param name="body">The body text to scan.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="body"/> is null.</exception>
         /// <returns>An array of any links found in the body text.</returns>
-        Uri[] GetUrls(string body);
+        string[] GetUrls(string body);
     }
 }
