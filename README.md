@@ -19,6 +19,8 @@ dotnet run --project .\UrlScanner.API\UrlScanner.API.csproj
 
 Once the project is up and running, it can be communicated with directly, or you can use the Swagger page at `<base url>/swagger/index.html`. It has one endpoint:
 
+## Endpoints
+
 ### scan-for-urls
 |Parameter Type|Name|Info|
 |--------------|------------|-------------|
