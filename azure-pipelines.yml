@@ -9,25 +9,27 @@ trigger:
 pool:
   vmImage: 'windows-latest'
 
-variables:
-  solution: '**/*.sln'
-  buildPlatform: 'Any CPU'
+variables:    
   buildConfiguration: 'Release'
 
 steps:
 
 - task: DotNetCoreCLI@2
+  displayName: "Restore packages"
   inputs:
     command: restore
     projects: './UriTest.sln'
 
 - task: DotNetCoreCLI@2
+  displayName: "Run tests"
   inputs:
     command: 'test'
     projects: '.\UrlScanner.Tests\UrlScanner.Tests.csproj'
 
 - task: DotNetCoreCLI@2
+  displayName: "Publish API project"
   inputs:
-    command: 'publish'
+    command: 'publish'    
+    arguments: -c $(buildConfiguration)
     publishWebProjects: false
     projects: '.\UrlScanner.API\UrlScanner.API.csproj'
