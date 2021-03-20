@@ -38,7 +38,7 @@ Invoke-RestMethod -Method Post https://localhost:5001/scan-for-urls?scanBehavior
 
 ## Endpoints
 
-### scan-for-urls
+### /scan-for-urls
 
 Returns a JSON array of strings containing all the discovered URLs.
 
