@@ -19,21 +19,22 @@ from the repo root.
 
 ## Running the project
 
-
 ```bash
-dotnet run --project .\UrlScanner.API\UrlScanner.API.csproj
+> dotnet run --project .\UrlScanner.API\UrlScanner.API.csproj
 ```
+
+Or simply setting the startup project to `UrlScanner.API` and running it in Visual Studio.
 
 Once the project is up and running, it can be communicated with directly, or you can use the Swagger page at `<base url>/swagger/index.html`. It has one endpoint, which is described below.
 
 Example CLI invocations:
 ```bash
 # cURL
-curl -X POST "https://localhost:5001/scan-for-urls?scanBehavior=UseLinkedInLibraryDetector" -H  "accept: text/plain" -H  "Content-Type: text/plain" -d "Sample text with a url www.google.com"
+> curl -X POST "https://localhost:5001/scan-for-urls?scanBehavior=UseLinkedInLibraryDetector" -H  "accept: text/plain" -H  "Content-Type: text/plain" -d "Sample text with a url www.google.com"
 ```
 ```PowerShell
 # PowerShell
-Invoke-RestMethod -Method Post https://localhost:5001/scan-for-urls?scanBehavior=UseLinkedInLibraryDetector -ContentType "text/plain" -Body "Sample text with a url www.google.com"
+> Invoke-RestMethod -Method Post https://localhost:5001/scan-for-urls?scanBehavior=UseLinkedInLibraryDetector -ContentType "text/plain" -Body "Sample text with a url www.google.com"
 ```
 
 ## Endpoints
@@ -46,3 +47,11 @@ Returns a JSON array of strings containing all the discovered URLs.
 |--------------|------------|-------------|
 |Query|scanBehavior|An enum that accepts one of two values: `UseRegexDetector`, or `UseLinkedInLibraryDetector`. The underlying scanner to use. UseRegexDetector uses the hand-rolled regex-based detector. UseLinkedInLibraryDetector uses LinkedIn's URL detection library. Defaults to UseLinkedInLibraryDetector. |
 |Content body|input|A `text/plain` body containing text with URLs in it.|
+
+## Running the tests
+
+```bash
+> dotnet test .\UrlScanner.Tests\UrlScanner.Tests.csproj --verbosity Normal
+```
+
+The tests can also be run in Visual Studio.
