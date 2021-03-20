@@ -32,4 +32,10 @@ steps:
     command: 'publish'    
     publishWebProjects: false
     projects: '.\UrlScanner.API\UrlScanner.API.csproj'
-    arguments: -c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/Output
+    arguments: '-c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/output'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/output'
+    ArtifactName: 'drop'
+    publishLocation: Container   
